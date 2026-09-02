@@ -8,7 +8,7 @@ on:
 
 jobs:
   test:
-    name: Run Unit Tests
+    name: Run Unit Tests 
     runs-on: ubuntu-latest
 
     steps:
@@ -27,5 +27,5 @@ jobs:
       - name: Generate Prisma Client
         run: npx prisma generate
 
-      - name: Run Jest Unit Tests
-        run: npm test
+      - name: Run Jest Unit Tests & Coverage Check
+        run: npm run test:cov

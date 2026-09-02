@@ -1,9 +1,12 @@
-# Automated Unit Testing & Code Quality Standard
+# Automated TDD Unit Testing & Code Quality Standard
 
 ## 🎯 Mandatory Core Rule
 Whenever you create, update, or refactor any **Controller**, **Service**, **Guard**, **Middleware**, or **Utility** in this repository:
-1. You **MUST ALWAYS** create or update the corresponding `*.spec.ts` unit test file alongside the source file.
-2. You **MUST ALWAYS** execute `npm test` in the terminal to verify that 100% of the unit tests pass before completing the task.
+1. You **MUST FOLLOW TDD (Red-Green-Refactor)**:
+   - 🔴 **Write Spec First**: Generate the `*.spec.ts` unit test file defining expected inputs, outputs, and edge cases.
+   - 🟢 **Implement Minimal Code**: Write the controller and service code to make tests pass.
+   - 🔵 **Refactor & Verify**: Optimize and run `npm test` until 100% of test suites pass.
+2. You **MUST ALWAYS** maintain coverage thresholds (>= 75%).
 3. You **MUST NEVER** consider a task finished if any unit test is failing or missing.
 
 ---
@@ -12,10 +15,8 @@ Whenever you create, update, or refactor any **Controller**, **Service**, **Guar
 
 ### 1. File Location & Naming
 - Place `.spec.ts` files in the exact same directory as the target file:
-  - Source: `src/modules/<feature>/<feature>.service.ts`
-  - Spec: `src/modules/<feature>/<feature>.service.spec.ts`
-  - Source: `src/modules/<feature>/<feature>.controller.ts`
-  - Spec: `src/modules/<feature>/<feature>.controller.spec.ts`
+  - `src/modules/<feature>/<feature>.service.spec.ts`
+  - `src/modules/<feature>/<feature>.controller.spec.ts`
 
 ### 2. Service Testing Rules (Mocking Prisma ORM)
 - **Do NOT connect to a live database during unit tests.**
@@ -32,15 +33,7 @@ Whenever you create, update, or refactor any **Controller**, **Service**, **Guar
     },
   };
   ```
-- Use `Test.createTestingModule()` to compile the in-memory testing module:
-  ```typescript
-  const module: TestingModule = await Test.createTestingModule({
-    providers: [
-      UsersService,
-      { provide: PrismaService, useValue: mockPrismaService },
-    ],
-  }).compile();
-  ```
+- Use `Test.createTestingModule()` to compile the in-memory testing module.
 - Always call `jest.clearAllMocks()` in `afterEach()`.
 
 ### 3. Controller Testing Rules
@@ -57,11 +50,3 @@ For each method implemented, the test file must cover:
    - Bad inputs / validation failure ➔ verify `BadRequestException` (400) is thrown.
 3. **Data Sanitization**: Verify that sensitive fields (e.g., `passwordHash`) are completely stripped from responses.
 4. **Soft-Delete Integrity**: Verify that query filters explicitly enforce `deletedAt: null`.
-
----
-
-## ⚡ Self-Verification Workflow (Autonomous Execution)
-1. **Write Feature Code**: Create DTOs, Controller, Service, and Module.
-2. **Write Spec Code**: Create `*.service.spec.ts` and `*.controller.spec.ts`.
-3. **Execute Verification Command**: Run `npm test <module_name>` or `npm test`.
-4. **Auto-Fix Failures**: If any test fails, analyze the assertion error, fix the implementation or test mock, and rerun until all tests pass.
