@@ -1,0 +1,7 @@
+# Cursor & AI Coding Rules - Exi Virtual Exhibition Backend
+
+## Testing Requirement (MANDATORY)
+1. Whenever a new NestJS controller, service, or API endpoint is added or modified, always create/update the corresponding `*.spec.ts` unit test file.
+2. In-memory mock `PrismaService` methods using `jest.fn()` with `@nestjs/testing`.
+3. Test happy paths, 404 NotFound, 409 Conflict, and input validation exceptions.
+4. Always run `npm test` to verify 100% passing tests before completing any coding task.
