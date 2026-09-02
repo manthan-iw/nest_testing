@@ -1,0 +1,7 @@
+node_modules
+dev_AI_logs_tracking
+documents
+dist
+coverage
+logs
+.env
