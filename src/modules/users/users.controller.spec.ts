@@ -7,23 +7,26 @@ describe('UsersController', () => {
   let controller: UsersController;
   let service: UsersService;
 
-  const mockUser = {
-    id: '123e4567-e89b-12d3-a456-426614174000',
-    email: 'test@example.com',
-    firstName: 'John',
-    lastName: 'Doe',
-    role: UserRole.ATTENDEE,
-    tenantId: null,
+  const mockCreatedUser = {
+    id: 'user-uuid-123',
+    name: 'Manthan',
+    email: 'manthan@example.com',
+    role: UserRole.USER,
     createdAt: new Date(),
     updatedAt: new Date(),
     deletedAt: null,
   };
 
+  const createUserDto = {
+    name: 'Manthan',
+    email: 'manthan@example.com',
+    password: 'Password@123',
+    role: UserRole.USER,
+  };
+
   beforeEach(async () => {
     const mockUsersService = {
-      findAll: jest.fn().mockResolvedValue([mockUser]),
-      findOne: jest.fn().mockResolvedValue(mockUser),
-      create: jest.fn().mockResolvedValue(mockUser),
+      create: jest.fn().mockResolvedValue(mockCreatedUser),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -44,27 +47,10 @@ describe('UsersController', () => {
     expect(controller).toBeDefined();
   });
 
-  it('should return list of users on findAll()', async () => {
-    const result = await controller.findAll();
-    expect(result).toEqual([mockUser]);
-    expect(service.findAll).toHaveBeenCalled();
-  });
+  it('should delegate create user request to usersService.create() and return sanitized user', async () => {
+    const result = await controller.create(createUserDto);
 
-  it('should return single user on findOne(id)', async () => {
-    const result = await controller.findOne(mockUser.id);
-    expect(result).toEqual(mockUser);
-    expect(service.findOne).toHaveBeenCalledWith(mockUser.id);
-  });
-
-  it('should delegate to service.create() on create()', async () => {
-    const dto = {
-      email: 'test@example.com',
-      password: 'Password123!',
-      firstName: 'John',
-      lastName: 'Doe',
-    };
-    const result = await controller.create(dto);
-    expect(result).toEqual(mockUser);
-    expect(service.create).toHaveBeenCalledWith(dto);
+    expect(result).toEqual(mockCreatedUser);
+    expect(service.create).toHaveBeenCalledWith(createUserDto);
   });
 });

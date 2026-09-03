@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import { ConflictException } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { PrismaService } from '../../database/prisma.service';
 import { UserRole } from '@prisma/client';
@@ -9,31 +9,32 @@ describe('UsersService', () => {
   let service: UsersService;
   let prisma: {
     user: {
-      findMany: jest.Mock;
-      findFirst: jest.Mock;
       findUnique: jest.Mock;
       create: jest.Mock;
     };
   };
 
   const mockUser = {
-    id: '123e4567-e89b-12d3-a456-426614174000',
-    email: 'test@example.com',
-    passwordHash: 'hashedPassword123',
-    firstName: 'John',
-    lastName: 'Doe',
-    role: UserRole.ATTENDEE,
-    tenantId: null,
+    id: 'user-uuid-123',
+    name: 'Manthan',
+    email: 'manthan@example.com',
+    passwordHash: '$2b$10$hashedPasswordString',
+    role: UserRole.USER,
     createdAt: new Date(),
     updatedAt: new Date(),
     deletedAt: null,
   };
 
+  const createUserDto = {
+    name: 'Manthan',
+    email: 'manthan@example.com',
+    password: 'Password@123',
+    role: UserRole.USER,
+  };
+
   beforeEach(async () => {
     const mockPrismaService = {
       user: {
-        findMany: jest.fn(),
-        findFirst: jest.fn(),
         findUnique: jest.fn(),
         create: jest.fn(),
       },
@@ -61,67 +62,36 @@ describe('UsersService', () => {
     expect(service).toBeDefined();
   });
 
-  describe('findAll', () => {
-    it('should return an array of users excluding passwordHash', async () => {
-      const { passwordHash, ...userWithoutPassword } = mockUser;
-      prisma.user.findMany.mockResolvedValue([userWithoutPassword]);
-
-      const result = await service.findAll();
-
-      expect(prisma.user.findMany).toHaveBeenCalledWith({
-        where: { deletedAt: null },
-        select: expect.any(Object),
-      });
-      expect(result).toEqual([userWithoutPassword]);
-    });
-  });
-
-  describe('findOne', () => {
-    it('should return user details if user exists and is not deleted', async () => {
-      const { passwordHash, ...userWithoutPassword } = mockUser;
-      prisma.user.findFirst.mockResolvedValue(userWithoutPassword);
-
-      const result = await service.findOne(mockUser.id);
-
-      expect(prisma.user.findFirst).toHaveBeenCalledWith({
-        where: { id: mockUser.id, deletedAt: null },
-        select: expect.any(Object),
-      });
-      expect(result).toEqual(userWithoutPassword);
-    });
-
-    it('should throw NotFoundException if user is not found', async () => {
-      prisma.user.findFirst.mockResolvedValue(null);
-
-      await expect(service.findOne('invalid-id')).rejects.toThrow(
-        NotFoundException,
-      );
-    });
-  });
-
-  describe('findByEmail', () => {
-    it('should return a user by email', async () => {
-      prisma.user.findFirst.mockResolvedValue(mockUser);
-
-      const result = await service.findByEmail('test@example.com');
-
-      expect(prisma.user.findFirst).toHaveBeenCalledWith({
-        where: { email: 'test@example.com', deletedAt: null },
-      });
-      expect(result).toEqual(mockUser);
-    });
-  });
-
   describe('create', () => {
-    const createUserDto = {
-      email: 'newuser@example.com',
-      password: 'SecurePassword123!',
-      firstName: 'Jane',
-      lastName: 'Doe',
-      role: UserRole.ATTENDEE,
-    };
+    // 1. Happy Path (#1 & #9)
+    it('should successfully create a new user with hashed password and return sanitized object', async () => {
+      prisma.user.findUnique.mockResolvedValue(null);
+      prisma.user.create.mockResolvedValue(mockUser);
+      jest
+        .spyOn(bcrypt, 'hash')
+        .mockImplementation(async () => '$2b$10$mockHashedPassword');
 
-    it('should throw ConflictException if email already exists', async () => {
+      const result = await service.create(createUserDto);
+
+      expect(prisma.user.findUnique).toHaveBeenCalledWith({
+        where: { email: createUserDto.email },
+      });
+      expect(prisma.user.create).toHaveBeenCalledWith({
+        data: {
+          name: createUserDto.name,
+          email: createUserDto.email,
+          passwordHash: '$2b$10$mockHashedPassword',
+          role: UserRole.USER,
+        },
+      });
+      expect(result).not.toHaveProperty('passwordHash');
+      expect(result.id).toBe(mockUser.id);
+      expect(result.name).toBe(createUserDto.name);
+      expect(result.email).toBe(createUserDto.email);
+    });
+
+    // 2. Conflict (#4)
+    it('should throw ConflictException when email already exists and abort creation', async () => {
       prisma.user.findUnique.mockResolvedValue(mockUser);
 
       await expect(service.create(createUserDto)).rejects.toThrow(
@@ -130,30 +100,64 @@ describe('UsersService', () => {
       expect(prisma.user.create).not.toHaveBeenCalled();
     });
 
-    it('should hash password and create a new user', async () => {
+    // 3. Database Error (#8)
+    it('should propagate database connection errors', async () => {
+      prisma.user.findUnique.mockRejectedValue(
+        new Error('Database connection failed'),
+      );
+
+      await expect(service.create(createUserDto)).rejects.toThrow(
+        'Database connection failed',
+      );
+      expect(prisma.user.create).not.toHaveBeenCalled();
+    });
+
+    // 4. Default Role Assignment (#9)
+    it('should assign USER role by default when role is omitted in DTO', async () => {
+      const dtoWithoutRole = {
+        name: 'Manthan',
+        email: 'manthan@example.com',
+        password: 'Password@123',
+      };
+
       prisma.user.findUnique.mockResolvedValue(null);
-      prisma.user.create.mockResolvedValue({
-        ...mockUser,
-        email: createUserDto.email,
-        firstName: createUserDto.firstName,
-        lastName: createUserDto.lastName,
-      });
+      prisma.user.create.mockResolvedValue(mockUser);
+      jest
+        .spyOn(bcrypt, 'hash')
+        .mockImplementation(async () => '$2b$10$mockHashedPassword');
 
-      jest.spyOn(bcrypt, 'hash').mockImplementation(async () => 'mockedHashedPassword');
-
-      const result = await service.create(createUserDto);
+      await service.create(dtoWithoutRole);
 
       expect(prisma.user.create).toHaveBeenCalledWith({
         data: {
-          email: createUserDto.email,
-          passwordHash: 'mockedHashedPassword',
-          firstName: createUserDto.firstName,
-          lastName: createUserDto.lastName,
-          role: UserRole.ATTENDEE,
+          name: dtoWithoutRole.name,
+          email: dtoWithoutRole.email,
+          passwordHash: '$2b$10$mockHashedPassword',
+          role: UserRole.USER,
         },
       });
+    });
+
+    // 5. Sanitization Edge Case (#9)
+    it('should never expose passwordHash in any returned fields', async () => {
+      prisma.user.findUnique.mockResolvedValue(null);
+      prisma.user.create.mockResolvedValue(mockUser);
+      jest
+        .spyOn(bcrypt, 'hash')
+        .mockImplementation(async () => '$2b$10$mockHashedPassword');
+
+      const result = await service.create(createUserDto);
+
+      expect(result).toEqual({
+        id: mockUser.id,
+        name: mockUser.name,
+        email: mockUser.email,
+        role: mockUser.role,
+        createdAt: mockUser.createdAt,
+        updatedAt: mockUser.updatedAt,
+        deletedAt: null,
+      });
       expect(result).not.toHaveProperty('passwordHash');
-      expect(result.email).toBe(createUserDto.email);
     });
   });
 });

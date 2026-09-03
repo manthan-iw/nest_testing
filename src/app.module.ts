@@ -6,7 +6,6 @@ import databaseConfig from './config/database.config';
 
 import { CustomLoggerModule } from './common/logger/logger.module';
 import { PrismaModule } from './database/prisma.module';
-import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 
 /**
@@ -28,7 +27,6 @@ import { UsersModule } from './modules/users/users.module';
     PrismaModule,
 
     // Feature Domain Modules
-    AuthModule,
     UsersModule,
   ],
 })

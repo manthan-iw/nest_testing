@@ -1,10 +1,9 @@
 import { Module } from '@nestjs/common';
-import { UsersService } from './users.service';
 import { UsersController } from './users.controller';
+import { UsersService } from './users.service';
 
 /**
- * Users Feature Module.
- * Binds UsersController and UsersService, exporting UsersService for AuthModule.
+ * Users Domain Feature Module.
  */
 @Module({
   controllers: [UsersController],
