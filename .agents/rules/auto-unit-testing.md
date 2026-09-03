@@ -1,4 +1,4 @@
-# Automated TDD Unit Testing & Code Quality Standard
+# Automated TDD Unit Testing & Comprehensive Quality Standards
 
 ## 🎯 Mandatory Core Rule
 Whenever you create, update, or refactor any **Controller**, **Service**, **Guard**, **Middleware**, or **Utility** in this repository:
@@ -11,42 +11,24 @@ Whenever you create, update, or refactor any **Controller**, **Service**, **Guar
 
 ---
 
-## 🏗️ Unit Testing Architecture & Mocking Standards
+## 📋 Comprehensive 10-Point Testing Checklist (Apply When Applicable)
 
-### 1. File Location & Naming
-- Place `.spec.ts` files in the exact same directory as the target file:
-  - `src/modules/<feature>/<feature>.service.spec.ts`
-  - `src/modules/<feature>/<feature>.controller.spec.ts`
+For every new or modified API/Service, tests must cover:
+1. **Happy Path Creation / Write (201 / 200)**: Successful record persistence and sanitization.
+2. **Happy Path Retrieval / Read (200)**: Correct response structure and data mapping.
+3. **Resource Not Found (404)**: `NotFoundException` when ID is missing or soft-deleted (`deletedAt != null`).
+4. **Duplicate / Unique Conflicts (409)**: `ConflictException` when unique fields (email, code, slug) already exist.
+5. **Validation & Bad Input (400)**: `BadRequestException` on invalid DTO fields, negative page numbers, or invalid enums.
+6. **Unauthorized Access (401)**: `UnauthorizedException` on invalid passwords, bad credentials, or expired JWT.
+7. **Forbidden Access / RBAC / Multi-Tenancy (403)**: `ForbiddenException` on insufficient role permissions or tenant ID mismatch.
+8. **Database & Unhandled Errors (500)**: Prisma connection or unexpected query failures handled gracefully.
+9. **Edge Cases & Data Sanitization**: Sensitive fields (`passwordHash`) stripped, empty arrays returned on no records, soft-delete filters (`deletedAt: null`) strictly enforced.
+10. **Pagination, Filtering & Sorting**: Accurate `skip: (page - 1) * limit`, `take: limit`, and `orderBy: { [sortBy]: sortOrder }`.
 
-### 2. Service Testing Rules (Mocking Prisma ORM)
-- **Do NOT connect to a live database during unit tests.**
-- In `beforeEach()`, mock `PrismaService` methods with `jest.fn()`:
-  ```typescript
-  const mockPrismaService = {
-    user: {
-      findMany: jest.fn(),
-      findFirst: jest.fn(),
-      findUnique: jest.fn(),
-      create: jest.fn(),
-      update: jest.fn(),
-      delete: jest.fn(),
-    },
-  };
-  ```
-- Use `Test.createTestingModule()` to compile the in-memory testing module.
+---
+
+## 🏗️ Testing & Mocking Guidelines (NestJS + Prisma)
+- Place `.spec.ts` files alongside their source file (`*.service.spec.ts`, `*.controller.spec.ts`).
+- Mock `PrismaService` via in-memory `jest.fn()` functions. Never connect to a live database during unit tests.
 - Always call `jest.clearAllMocks()` in `afterEach()`.
-
-### 3. Controller Testing Rules
-- Mock the injected Service layer.
-- Verify that controller route handlers correctly pass request parameters (`@Body()`, `@Param()`, `@Query()`, `@Req()`) to the corresponding service method.
-
-### 4. Required Test Coverage Matrix for Every API / Service
-For each method implemented, the test file must cover:
-1. **Happy Path**: Successful creation (201), retrieval (200), update (200), or soft-deletion (200).
-2. **Error / Exception Paths**:
-   - Duplicate key conflicts ➔ verify `ConflictException` (409) is thrown.
-   - Resource not found / soft-deleted ➔ verify `NotFoundException` (404) is thrown.
-   - Unauthorized / Invalid credentials ➔ verify `UnauthorizedException` (401) is thrown.
-   - Bad inputs / validation failure ➔ verify `BadRequestException` (400) is thrown.
-3. **Data Sanitization**: Verify that sensitive fields (e.g., `passwordHash`) are completely stripped from responses.
-4. **Soft-Delete Integrity**: Verify that query filters explicitly enforce `deletedAt: null`.
+- Run `npm test` to verify 100% passing tests before completing any task.
