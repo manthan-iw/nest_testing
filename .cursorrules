@@ -1,7 +1,9 @@
 # Cursor & AI Coding Rules - Exi Virtual Exhibition Backend
 
-## Testing Requirement (MANDATORY)
-1. Whenever a new NestJS controller, service, or API endpoint is added or modified, always create/update the corresponding `*.spec.ts` unit test file.
-2. In-memory mock `PrismaService` methods using `jest.fn()` with `@nestjs/testing`.
-3. Test happy paths, 404 NotFound, 409 Conflict, and input validation exceptions.
-4. Always run `npm test` to verify 100% passing tests before completing any coding task.
+## Feature-First Engineering Standards
+1. Follow domain-driven, modular architecture for all NestJS modules (`modules/<feature>/`).
+2. Define schema & strong DTOs with `class-validator`, `class-transformer`, and Swagger `@ApiProperty()`.
+3. Implement core business logic in services with Prisma ORM, handling data sanitization (e.g. `passwordHash`), soft deletes (`deletedAt: null`), and multi-tenant isolation.
+4. Expose REST endpoints via controllers with clear OpenAPI annotations (`@ApiOperation()`, `@ApiResponse()`).
+5. Verify changes with `npm run build` and Swagger UI (`/api/v1/docs`).
+
