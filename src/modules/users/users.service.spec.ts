@@ -86,7 +86,7 @@ describe('UsersService', () => {
       });
       expect(result).not.toHaveProperty('passwordHash');
       expect(result.id).toBe(mockUser.id);
-      expect(result.name).toBe('Wrong')
+      expect(result.name).toBe('wrong')
       expect(result.email).toBe(createUserDto.email);
     });
 
