@@ -16,7 +16,6 @@ export type UserWithoutPassword = Omit<User, 'passwordHash'>;
 @Injectable()
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
-
   /**
    * Sanitizes user object by removing passwordHash.
    */
